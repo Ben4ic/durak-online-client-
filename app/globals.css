@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #080d12;
+  --panel: #111820;
+  --panel-light: #182028;
+  --text-primary: #f6f7f8;
+  --text-secondary: #8f969f;
+  --gold: #f5c344;
+  --gold-light: #ffd66b;
+  --green: #46d495;
+  --red: #f05b52;
+  --purple: #9474ff;
+  --teal: #48d1a0;
+}
+
+* { box-sizing: border-box; }
+html { background: #05080c; }
+body {
+  margin: 0;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 84% 8%, rgba(246,195,68,.08), transparent 24%),
+    linear-gradient(180deg, #071017 0%, var(--background) 34%, #05090d 100%);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+button { font: inherit; }
+
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Game feel */
+.card-motion {
+  transform-origin: 50% 100%;
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease, filter 220ms ease;
+  will-change: transform;
+}
+.card-motion:hover { transform: translateY(-7px) rotate(-.5deg); filter: brightness(1.02); }
+.card-motion:active { transform: translateY(-2px) scale(.985); }
+.card-selected { transform: translateY(-18px) scale(1.035) !important; box-shadow: 0 20px 38px rgba(0,0,0,.38), 0 0 0 1px rgba(245,195,68,.35); }
+.ui-press { transition: transform 150ms ease, filter 150ms ease, background-color 150ms ease; }
+.ui-press:hover:not(:disabled) { filter: brightness(1.06); }
+.ui-press:active:not(:disabled) { transform: scale(.975); }
+.turn-pill { transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease; }
+.deal-card { animation: dealCard .44s cubic-bezier(.18,.85,.3,1.08) both; }
+.play-card-in { animation: playCardIn .36s cubic-bezier(.15,.8,.25,1) both; }
+.defense-card-in { animation: defendCardIn .34s cubic-bezier(.15,.8,.25,1) both; }
+.deck-enter { animation: deckEnter .5s cubic-bezier(.18,.8,.25,1) both; }
+.table-zone { min-height: 170px; }
+@keyframes dealCard {
+  from { opacity: 0; transform: translateY(34px) scale(.92) rotate(3deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+@keyframes playCardIn {
+  from { opacity: .15; transform: translateY(70px) translateX(-18px) rotate(-18deg) scale(.72); }
+  to { opacity: 1; transform: translateY(0) translateX(0) rotate(0) scale(1); }
+}
+@keyframes defendCardIn {
+  from { opacity: .15; transform: translateY(-58px) translateX(20px) rotate(15deg) scale(.75); }
+  to { opacity: 1; transform: translateY(0) translateX(0) rotate(0) scale(1); }
+}
+@keyframes deckEnter {
+  from { opacity: 0; transform: translateX(30px) scale(.94); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-motion,.ui-press,.deal-card,.play-card-in,.defense-card-in,.deck-enter { animation: none !important; transition: none !important; }
+}
+
+
+/* Premium card interaction pass */
+.playing-card {
+  position: relative;
+  transform-origin: 50% 88%;
+  transition:
+    transform 320ms cubic-bezier(.16,.84,.24,1),
+    box-shadow 280ms ease,
+    filter 220ms ease,
+    opacity 180ms ease;
+  box-shadow: 0 12px 26px rgba(0,0,0,.30);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.playing-card:hover {
+  transform: translateY(-9px) rotate(-.6deg);
+  filter: brightness(1.025);
+  box-shadow: 0 20px 34px rgba(0,0,0,.36);
+}
+.playing-card:active {
+  transform: translateY(-5px) scale(.985);
+}
+.card-selected {
+  transform: translateY(-22px) scale(1.045) !important;
+  box-shadow: 0 24px 42px rgba(0,0,0,.42), 0 0 0 1px rgba(245,195,68,.38) !important;
+}
+.card-back {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(245,195,68,.34);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(245,195,68,.12), transparent 38%),
+    linear-gradient(145deg,#202832,#0d141b);
+}
+.card-back-inner {
+  position: absolute;
+  inset: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(245,195,68,.18);
+  background:
+    linear-gradient(45deg, rgba(245,195,68,.035) 25%, transparent 25%, transparent 75%, rgba(245,195,68,.035) 75%),
+    linear-gradient(45deg, rgba(245,195,68,.035) 25%, transparent 25%, transparent 75%, rgba(245,195,68,.035) 75%);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
+}
+.hand-card {
+  position: relative;
+  transform-origin: 50% 110%;
+  transition: transform 360ms cubic-bezier(.16,.84,.24,1), margin 300ms ease;
+  animation: handSettle 420ms cubic-bezier(.18,.88,.28,1) both;
+}
+.table-placeholder {
+  animation: breathe 2.6s ease-in-out infinite;
+}
+@keyframes handSettle {
+  from { opacity: 0; transform: translateY(28px) scale(.96); }
+  to { opacity: 1; }
+}
+@keyframes breathe {
+  0%,100% { opacity: .22; transform: scale(1); }
+  50% { opacity: .38; transform: scale(1.025); }
+}
+@media (max-width: 640px) {
+  .playing-card:hover { transform: none; }
+  .card-selected { transform: translateY(-18px) scale(1.035) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .playing-card,.hand-card,.table-placeholder { animation: none !important; transition: none !important; }
+}
+
+
+/* Polished animation system — no layered card clones in hands */
+.game-card {
+  box-shadow: 0 12px 26px rgba(0,0,0,.30);
+  transform-origin: 50% 90%;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  will-change: transform;
+  transition:
+    transform 260ms cubic-bezier(.16,.82,.22,1),
+    box-shadow 240ms ease,
+    filter 200ms ease,
+    opacity 160ms ease;
+}
+.game-card:hover {
+  transform: translateY(-8px);
+  filter: brightness(1.025);
+  box-shadow: 0 19px 34px rgba(0,0,0,.37);
+}
+.game-card:active {
+  transform: translateY(-4px) scale(.988);
+}
+.selected-card {
+  transform: translateY(-21px) scale(1.04) !important;
+  box-shadow: 0 24px 44px rgba(0,0,0,.42), 0 0 0 1px rgba(245,195,68,.38) !important;
+}
+
+.card-back {
+  overflow: hidden;
+  border: 1px solid rgba(245,195,68,.34);
+  background:
+    radial-gradient(circle at 50% 50%,rgba(245,195,68,.12),transparent 38%),
+    linear-gradient(145deg,#202832,#0d141b);
+}
+.card-back-pattern {
+  position: absolute;
+  inset: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(245,195,68,.17);
+  background:
+    linear-gradient(45deg,rgba(245,195,68,.035) 25%,transparent 25%,transparent 75%,rgba(245,195,68,.035) 75%),
+    linear-gradient(45deg,rgba(245,195,68,.035) 25%,transparent 25%,transparent 75%,rgba(245,195,68,.035) 75%);
+  background-position: 0 0,8px 8px;
+  background-size:16px 16px;
+}
+
+.hand-wrapper {
+  position: relative;
+  transform-origin: 50% 120%;
+  transition:
+    transform 300ms cubic-bezier(.16,.82,.22,1),
+    margin 280ms ease;
+}
+
+.ui-button {
+  transition: transform 130ms ease, filter 150ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+.ui-button:not(:disabled):hover { filter: brightness(1.06); }
+.ui-button:not(:disabled):active { transform: scale(.975); }
+
+.table-empty {
+  animation: tablePulse 2.4s ease-in-out infinite;
+}
+@keyframes tablePulse {
+  0%,100% { opacity:.22; transform:scale(1); }
+  50% { opacity:.38; transform:scale(1.025); }
+}
+
+.reaction-bubble {
+  display:grid;
+  place-items:center;
+  min-width:48px;
+  height:48px;
+  padding:0 12px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:18px 18px 18px 5px;
+  background:rgba(15,23,30,.96);
+  box-shadow:0 16px 38px rgba(0,0,0,.38);
+  font-size:25px;
+  animation:reactionPop 1800ms cubic-bezier(.18,.86,.2,1) both;
+}
+@keyframes reactionPop {
+  0% { opacity:0; transform:translateY(12px) scale(.72); }
+  10% { opacity:1; transform:translateY(0) scale(1.08); }
+  18% { transform:scale(1); }
+  78% { opacity:1; transform:translateY(-2px); }
+  100% { opacity:0; transform:translateY(-14px) scale(.92); }
+}
+
+.emoji-panel { animation:panelIn 170ms cubic-bezier(.18,.86,.2,1) both; }
+.chat-panel { animation:panelIn 190ms cubic-bezier(.18,.86,.2,1) both; }
+@keyframes panelIn {
+  from { opacity:0; transform:translateY(10px) scale(.96); }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
+.emoji-button {
+  transition:transform 130ms ease, background-color 130ms ease;
+}
+.emoji-button:active { transform:scale(.88); }
+
+.take-ghost {
+  position:fixed;
+  z-index:115;
+  width:88px;
+  height:128px;
+  border-radius:13px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#F7F5EE;
+  box-shadow:0 15px 30px rgba(0,0,0,.38);
+  pointer-events:none;
+}
+
+@media (max-width:640px) {
+  .game-card:hover { transform:none; }
+  .selected-card { transform:translateY(-17px) scale(1.03) !important; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .game-card,.hand-wrapper,.ui-button,.reaction-bubble,.emoji-panel,.chat-panel,.table-empty {
+    animation:none !important;
+    transition:none !important;
+  }
+}
+
+
+/* Deal/trump stability fixes */
+.game-card,
+.card-back,
+.hand-wrapper {
+  contain: layout paint style;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+
+/* iPhone hard overrides: keep the table fully visible and prevent desktop card dimensions
+   from leaking into Safari through layout/zoom quirks. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 767px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  .game-card {
+    width: 54px !important;
+    height: 78px !important;
+    border-radius: 9px !important;
+    padding: 5px !important;
+  }
+
+  .card-back {
+    width: 50px !important;
+    height: 72px !important;
+    border-radius: 8px !important;
+  }
+
+  .hand-wrapper {
+    transform-origin: 50% 110% !important;
+  }
+
+  /* Keep reactions/chat from sitting on top of the player's hand on Safari. */
+  .reaction-bubble {
+    min-width: 42px;
+    height: 42px;
+    font-size: 21px;
+  }
+}
