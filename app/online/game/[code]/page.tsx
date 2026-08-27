@@ -4,6 +4,7 @@ import { ArrowLeft, Crown, LoaderCircle, RefreshCw, Wifi, WifiOff } from "lucide
 import { useParams, useRouter } from "next/navigation";
 import { useI18n } from "@/components/I18nProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PlayingCard, SuitIcon, isRedSuit } from "@/components/PlayingCard";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Card = { id: string; suit: Suit; rank: string };
@@ -33,6 +34,13 @@ function beats(defense: Card, attack: Card, trump: Suit) {
   return defense.suit === trump && attack.suit !== trump;
 }
 
+// NOTE: card visuals now live in one shared place — components/PlayingCard.tsx
+// (used here AND in the bot-game page). This used to be a third independent
+// copy of the same rendering logic with its own slightly-different card
+// sizes and raw Unicode suit glyphs; that duplication was itself a source
+// of visual bugs (inconsistent look between the two game modes, no shared
+// fix path). These are thin wrappers so nothing else in this file needs to
+// change its call sites.
 function GameCard({
   card,
   back = false,
@@ -48,42 +56,37 @@ function GameCard({
   compact?: boolean;
   onClick?: () => void;
 }) {
-  const size = compact ? "h-[82px] w-[57px] rounded-[9px]" : "h-[116px] w-[80px] rounded-[12px]";
+  const width = compact ? 57 : 80;
   if (back) {
     return (
-      <div className={`${size} relative shrink-0 overflow-hidden border border-[#F5C344]/30 bg-[radial-gradient(circle,rgba(245,195,68,.12),transparent_46%),linear-gradient(145deg,#202832,#10161d)] shadow-[0_10px_25px_rgba(0,0,0,.28)]`}>
-        <div className="absolute inset-[5px] rounded-[6px] border border-[#F5C344]/15" />
-        <Crown className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-[#F5C344]/55" />
-      </div>
+      <PlayingCard faceDown width={width} className="shrink-0">
+        <Crown className="h-5 w-5 text-[#F5C344]/55" />
+      </PlayingCard>
     );
   }
-
-  const red = card!.suit === "♥" || card!.suit === "♦";
   return (
-    <button
+    <PlayingCard
+      card={card}
+      width={width}
+      selected={selected}
       disabled={disabled}
       onClick={onClick}
-      className={`${size} relative shrink-0 border bg-[#F7F5EE] text-left shadow-[0_10px_25px_rgba(0,0,0,.28)] transition-[transform,filter,opacity] duration-200 ${
-        compact ? "p-1.5" : "p-2"
-      } ${selected ? "-translate-y-3 border-[#F5C344] ring-2 ring-[#F5C344]/25" : "border-black/10"} ${
-        disabled ? "opacity-40 grayscale-[.25]" : "hover:-translate-y-1"
-      }`}
-    >
-      <div className={`${compact ? "text-[14px]" : "text-[18px]"} font-black leading-none ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>{card!.rank}</div>
-      <div className={`${compact ? "mt-0.5 text-[19px]" : "mt-1 text-[26px]"} leading-none ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>{card!.suit}</div>
-      <div className={`absolute bottom-1 right-1.5 ${compact ? "text-[24px]" : "text-[34px]"} leading-none ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>{card!.suit}</div>
-    </button>
+      className="shrink-0"
+    />
   );
 }
 
 function TrumpDeck({ suit, count }: { suit: Suit | null; count: number }) {
   if (!suit) return null;
-  const red = suit === "♥" || suit === "♦";
+  const red = isRedSuit(suit);
+  const color = red ? "#C72F3A" : "#151A20";
   return (
     <div className="relative h-[76px] w-[106px] shrink-0">
       {count > 0 && (
         <div className="absolute bottom-[2px] left-0 h-[45px] w-[76px] rounded-[8px] border border-black/10 bg-[#F7F5EE] shadow-lg">
-          <div className={`absolute left-2 top-2 text-[22px] leading-none ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>{suit}</div>
+          <div className="absolute left-2 top-2">
+            <SuitIcon suit={suit} size={22} color={color} />
+          </div>
         </div>
       )}
       {count > 0 && (
