@@ -139,7 +139,7 @@ button { font: inherit; }
 }
 
 
-/* Polished animation system — no layered card clones in hands */
+/* Polished animation system вЂ” no layered card clones in hands */
 .game-card {
   box-shadow: 0 12px 26px rgba(0,0,0,.30);
   transform-origin: 50% 90%;
@@ -288,18 +288,18 @@ html, body {
     text-size-adjust: 100%;
   }
 
-  .game-card {
-    width: 54px !important;
-    height: 78px !important;
-    border-radius: 9px !important;
-    padding: 5px !important;
-  }
+  /* Card box size used to be force-overridden here with !important while
+     the rank/suit font sizes inside it were still sized for the bigger
+     desktop card вЂ” box and content drifted apart, which is what made
+     cards look cramped/"smeared" on phones. Card sizing is now decided in
+     one place (components/useCardWidth.ts) and PlayingCard computes every
+     internal measurement as a fraction of that same width, so this
+     override is gone rather than fixed вЂ” there's nothing left for it to
+     fight with.
 
-  .card-back {
-    width: 50px !important;
-    height: 72px !important;
-    border-radius: 8px !important;
-  }
+     If you deliberately want the card box smaller than what
+     useCardWidth returns, change the numbers passed to useCardWidth() at
+     the call site instead of overriding .game-card's CSS box size. */
 
   .hand-wrapper {
     transform-origin: 50% 110% !important;
