@@ -22,6 +22,8 @@ import {
   playerTake,
   restartGame,
 } from "@/lib/durak";
+import { PlayingCard, SuitIcon, isRedSuit } from "@/components/PlayingCard";
+import { useCardWidth } from "@/components/useCardWidth";
 
 type Flight = {
   id: string;
@@ -41,6 +43,16 @@ type ChatItem = {
 
 const QUICK_REACTIONS = ["👍", "😎", "😂", "🔥", "👏", "🤝"];
 
+// NOTE: card visuals (size, fonts, suit icons) live in one place now —
+// components/PlayingCard.tsx. These are thin wrappers so the rest of this
+// file doesn't need to change its call sites. See that file for why: in
+// short, duplicating this logic per-page was how the blurry/cramped card
+// bugs happened (a resize hack in one copy, a scale-transform hack in
+// another, drifting apart from each other).
+function useGameCardWidth() {
+  return useCardWidth({ mobile: 62, desktop: 88 });
+}
+
 function FaceCard({
   card,
   selected = false,
@@ -54,28 +66,16 @@ function FaceCard({
   hidden?: boolean;
   nodeRef?: (node: HTMLButtonElement | null) => void;
 }) {
-  const red = card.suit === "♥" || card.suit === "♦";
-
+  const width = useGameCardWidth();
   return (
-    <button
-      ref={nodeRef}
+    <PlayingCard
+      card={card}
+      width={width}
+      selected={selected}
       onClick={onClick}
-      className={`game-card relative h-[90px] w-[62px] shrink-0 rounded-[10px] border bg-[#F7F5EE] p-1.5 text-left md:h-[128px] md:w-[88px] md:rounded-[13px] md:p-2.5 ${
-        selected
-          ? "selected-card border-[#F5C344] ring-2 ring-[#F5C344]/30"
-          : "border-black/10"
-      } ${hidden ? "invisible" : ""}`}
-    >
-      <div className={`text-[15px] font-black leading-none md:text-xl ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>
-        {card.rank}
-      </div>
-      <div className={`mt-0.5 text-[20px] leading-none md:mt-1 md:text-3xl ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>
-        {card.suit}
-      </div>
-      <div className={`absolute bottom-1 right-1.5 text-[27px] leading-none md:bottom-1.5 md:right-2 md:text-4xl ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>
-        {card.suit}
-      </div>
-    </button>
+      nodeRef={nodeRef}
+      className={`game-card ${hidden ? "invisible" : ""}`}
+    />
   );
 }
 
@@ -86,16 +86,16 @@ function CardBack({
   hidden?: boolean;
   nodeRef?: (node: HTMLDivElement | null) => void;
 }) {
+  const width = useCardWidth({ mobile: 57, desktop: 78 });
   return (
-    <div
-      ref={nodeRef}
-      className={`game-card card-back relative h-[82px] w-[57px] shrink-0 rounded-[9px] md:h-[112px] md:w-[78px] md:rounded-xl ${
-        hidden ? "invisible" : ""
-      }`}
+    <PlayingCard
+      faceDown
+      width={width}
+      nodeRef={nodeRef}
+      className={`game-card card-back ${hidden ? "invisible" : ""}`}
     >
-      <div className="card-back-pattern" />
-      <Crown className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-[#F5C344]/65" />
-    </div>
+      <Crown className="h-6 w-6 text-[#F5C344]/65" />
+    </PlayingCard>
   );
 }
 
@@ -141,27 +141,25 @@ function FlyingCard({ flight, onDone }: { flight: Flight; onDone: () => void }) 
         filter: "drop-shadow(0 18px 25px rgba(0,0,0,.42))",
       }}
     >
-      <div
-        style={{
-          transform: `scale(${flight.from.width / 88})`,
-          transformOrigin: "top left",
-        }}
-      >
-        <FaceCard card={flight.card} />
-      </div>
+      {/* Render at the card's real measured size (flight.from.width) directly —
+          no CSS scale-transform needed. Scaling rendered TEXT with a
+          non-integer transform is exactly what caused the blur during this
+          animation before; PlayingCard renders natively at any width. */}
+      <PlayingCard card={flight.card} width={flight.from.width} />
     </div>
   );
 }
 
 function MiniTrump({ card }: { card: GameCard }) {
-  const red = card.suit === "♥" || card.suit === "♦";
+  const red = isRedSuit(card.suit);
+  const color = red ? "#C72F3A" : "#151A20";
   return (
     <div className="relative h-[78px] w-[118px] overflow-hidden rounded-[11px] border border-black/10 bg-[#F7F5EE] shadow-[0_10px_22px_rgba(0,0,0,.30)]">
-      <div className={`absolute left-3 top-2 text-[20px] font-black leading-none ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>
+      <div className="absolute left-3 top-2 text-[20px] font-black leading-none" style={{ color }}>
         {card.rank}
       </div>
-      <div className={`absolute left-3 top-[35px] text-[28px] leading-none ${red ? "text-[#C72F3A]" : "text-[#151A20]"}`}>
-        {card.suit}
+      <div className="absolute left-3 top-[35px]">
+        <SuitIcon suit={card.suit} size={28} color={color} />
       </div>
       <div className="absolute bottom-2 right-3 text-[11px] font-bold uppercase tracking-[.10em] text-black/35">
         trump
