@@ -150,9 +150,22 @@ function FlyingCard({ flight, onDone }: { flight: Flight; onDone: () => void }) 
   );
 }
 
-function MiniTrump({ card }: { card: GameCard }) {
+function MiniTrump({ card, compact = false }: { card: GameCard; compact?: boolean }) {
   const red = isRedSuit(card.suit);
   const color = red ? "#C72F3A" : "#151A20";
+  // "compact" renders genuinely smaller elements (real pixel sizes) rather
+  // than CSS-scaling this component down — scaling text/SVG with a
+  // transform is exactly what caused the blur bugs elsewhere in this file.
+  if (compact) {
+    return (
+      <div className="relative flex h-[34px] items-center gap-1.5 rounded-full border border-black/10 bg-[#F7F5EE] pl-2 pr-2.5 shadow-[0_6px_14px_rgba(0,0,0,.28)]">
+        <SuitIcon suit={card.suit} size={15} color={color} />
+        <span className="text-[11px] font-black leading-none" style={{ color }}>
+          {card.rank}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="relative h-[78px] w-[118px] overflow-hidden rounded-[11px] border border-black/10 bg-[#F7F5EE] shadow-[0_10px_22px_rgba(0,0,0,.30)]">
       <div className="absolute left-3 top-2 text-[20px] font-black leading-none" style={{ color }}>
@@ -171,15 +184,40 @@ function MiniTrump({ card }: { card: GameCard }) {
 function Deck({
   game,
   deckAnchorRef,
+  compact = false,
 }: {
   game: GameState;
   deckAnchorRef: (node: HTMLDivElement | null) => void;
+  compact?: boolean;
 }) {
   const trumpCard = game.deck[game.deck.length - 1] || ({
     id: "trump-placeholder",
     suit: game.trump,
     rank: "A",
   } as GameCard);
+
+  // Compact: a real, natively-small layout for narrow screens — not the
+  // desktop layout squeezed down with a CSS scale-transform. The old
+  // mobile version was `scale-[.40]` on this whole component, which (a)
+  // blurred the text/suit for the same reason the flying-card animation
+  // did, and (b) was absolutely positioned with negative offsets to
+  // compensate for the shrink, which is exactly what let it drift up and
+  // overlap the turn-indicator pill above it. This version sits in normal
+  // document flow, so it physically cannot overlap a sibling element.
+  if (compact) {
+    if (game.deck.length === 0) return null;
+    return (
+      <div className="flex shrink-0 items-center gap-1.5">
+        <div ref={deckAnchorRef} className="relative">
+          <PlayingCard faceDown width={30} />
+          <div className="absolute -bottom-1 -right-1 rounded-full bg-black/70 px-1 text-[8px] font-bold leading-[13px] text-white/85">
+            {game.deck.length}
+          </div>
+        </div>
+        <MiniTrump card={trumpCard} compact />
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-[158px] w-[194px] shrink-0">
@@ -660,8 +698,10 @@ export default function GamePage() {
 
           <div className="text-center">
             <div className="text-[12px] font-semibold md:text-base">{tr("Classic Durak · 1v1 vs Bot")}</div>
-            <div className="text-[9px] text-white/40 md:text-xs">
-              Trump <span className="text-[#F5C344]">{game.trump}</span> · Deck {game.deck.length}
+            <div className="flex items-center justify-center gap-1 text-[9px] text-white/40 md:text-xs">
+              <span>Trump</span>
+              <SuitIcon suit={game.trump} size={10} color="#F5C344" />
+              <span>· Deck {game.deck.length}</span>
             </div>
           </div>
 
@@ -686,7 +726,7 @@ export default function GamePage() {
               )}
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <div
                 className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-all md:px-3 md:py-1.5 md:text-xs ${
                   game.botThinking
@@ -706,11 +746,22 @@ export default function GamePage() {
               <div className="hidden md:block">
                 <Deck game={game} deckAnchorRef={(n) => (deckAnchorRef.current = n)} />
               </div>
+
+              {/* Mobile: compact, in-flow deck/trump badge — sits right next
+                  to the turn pill instead of floating absolutely over other
+                  content (that's what used to overlap "Ваш ход"). Rendered
+                  after the desktop version, same relative order as before,
+                  so it's still the one deckAnchorRef ends up pointing at on
+                  mobile (whichever Deck instance mounts last in the tree
+                  wins the shared ref — matches the original ordering). */}
+              <div className="md:hidden">
+                <Deck game={game} deckAnchorRef={(n) => (deckAnchorRef.current = n)} compact />
+              </div>
             </div>
           </div>
 
           <div className="relative mt-0.5 h-[76px] shrink-0 md:mt-4 md:min-h-[158px] md:h-auto">
-            <div className="flex justify-center pr-[72px] md:pr-0">
+            <div className="flex justify-center md:pr-0">
               <div className="flex -space-x-5 md:-space-x-8">
                 {game.bot.map((c, i) => (
                   <div
@@ -730,10 +781,6 @@ export default function GamePage() {
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="absolute right-[-62px] top-[-44px] origin-top-right scale-[.40] md:hidden">
-              <Deck game={game} deckAnchorRef={(n) => (deckAnchorRef.current = n)} />
             </div>
           </div>
 
@@ -800,7 +847,7 @@ export default function GamePage() {
               </div>
             )}
 
-            <div className="mx-auto flex w-max -space-x-4 px-4 md:-space-x-5 md:px-6">
+            <div className="mx-auto flex w-max -space-x-1.5 px-4 md:-space-x-3 md:px-6">
               {game.player.map((c, i) => (
                 <div
                   key={c.id}
@@ -828,30 +875,130 @@ export default function GamePage() {
             </div>
           </div>
 
-          <div className="mt-0.5 grid h-[38px] shrink-0 grid-cols-3 gap-1.5 md:mx-auto md:mt-3 md:h-auto md:w-[620px] md:gap-3">
-            <button
-              disabled={game.attacker !== "bot" || !!game.winner || game.botThinking || locked || !!flight}
-              onClick={take}
-              className="ui-button h-[38px] rounded-[10px] text-[10px] md:h-12 md:rounded-xl md:text-sm border border-white/10 bg-white/[0.05] text-sm font-semibold disabled:opacity-30"
-            >
-              Take
-            </button>
+          <div className="relative mt-0.5 shrink-0 md:mt-3">
+            <div className="grid h-[38px] grid-cols-3 gap-1.5 md:mx-auto md:h-auto md:w-[620px] md:gap-3">
+              <button
+                disabled={game.attacker !== "bot" || !!game.winner || game.botThinking || locked || !!flight}
+                onClick={take}
+                className="ui-button h-[38px] rounded-[10px] text-[10px] md:h-12 md:rounded-xl md:text-sm border border-white/10 bg-white/[0.05] text-sm font-semibold disabled:opacity-30"
+              >
+                Take
+              </button>
 
-            <button
-              disabled={!selectedCard || !!game.winner || game.botThinking || locked || !!flight}
-              onClick={playSelected}
-              className="ui-button h-[38px] rounded-[10px] text-[10px] md:h-12 md:rounded-xl md:text-sm bg-gradient-to-r from-[#F1B92F] to-[#FFD662] text-sm font-extrabold text-[#111820] disabled:opacity-35"
-            >
-              Play card
-            </button>
+              <button
+                disabled={!selectedCard || !!game.winner || game.botThinking || locked || !!flight}
+                onClick={playSelected}
+                className="ui-button h-[38px] rounded-[10px] text-[10px] md:h-12 md:rounded-xl md:text-sm bg-gradient-to-r from-[#F1B92F] to-[#FFD662] text-sm font-extrabold text-[#111820] disabled:opacity-35"
+              >
+                Play card
+              </button>
 
-            <button
-              disabled={game.attacker !== "player" || !!game.winner || game.botThinking || locked || !!flight}
-              onClick={done}
-              className="ui-button h-[38px] rounded-[10px] text-[10px] md:h-12 md:rounded-xl md:text-sm border border-white/10 bg-white/[0.05] text-sm font-semibold disabled:opacity-30"
-            >
-              Done
-            </button>
+              <button
+                disabled={game.attacker !== "player" || !!game.winner || game.botThinking || locked || !!flight}
+                onClick={done}
+                className="ui-button h-[38px] rounded-[10px] text-[10px] md:h-12 md:rounded-xl md:text-sm border border-white/10 bg-white/[0.05] text-sm font-semibold disabled:opacity-30"
+              >
+                Done
+              </button>
+            </div>
+
+            {/* Reactions + chat toggle — anchored directly above the action
+                row itself (bottom-full of THIS wrapper) instead of a guessed
+                fixed distance from the page bottom. The old fixed-pixel
+                offset only worked for one exact layout height; the moment
+                anything above it changed size, these buttons drifted down
+                onto Take/Play/Done. Anchoring to the action row's own edge
+                means it can never overlap it, on any screen. */}
+            <div className="absolute bottom-full right-0 z-50 mb-2 flex flex-col items-end gap-2">
+              {reactionOpen && (
+                <div className="emoji-panel flex gap-1 rounded-2xl border border-white/10 bg-[#111820]/95 p-2 shadow-2xl backdrop-blur-xl">
+                  {QUICK_REACTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => sendReaction(emoji)}
+                      className="emoji-button grid h-10 w-10 place-items-center rounded-xl text-xl hover:bg-white/[0.06]"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setReactionOpen((v) => !v);
+                    setChatOpen(false);
+                  }}
+                  className="ui-button grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-[#111820]/95 shadow-xl"
+                >
+                  <SmilePlus className="h-5 w-5 text-[#F5C344]" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setChatOpen((v) => !v);
+                    setReactionOpen(false);
+                  }}
+                  className="ui-button grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-[#111820]/95 shadow-xl"
+                >
+                  <MessageCircle className="h-5 w-5 text-white/70" />
+                </button>
+              </div>
+            </div>
+
+            {chatOpen && (
+              <div className="chat-panel absolute bottom-full right-0 z-50 mb-[64px] flex h-[270px] w-[286px] flex-col overflow-hidden rounded-[20px] border border-white/10 bg-[#0D151C]/97 shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl">
+                <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+                  <div>
+                    <div className="text-sm font-semibold">{tr("Game chat")}</div>
+                    <div className="text-[10px] text-white/35">{tr("Bot practice chat")}</div>
+                  </div>
+                  <button onClick={() => setChatOpen(false)} className="text-white/40 hover:text-white">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex-1 space-y-2 overflow-y-auto p-3">
+                  {chat.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`flex ${item.side === "player" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm ${
+                          item.emoji ? "text-xl" : ""
+                        } ${
+                          item.side === "player"
+                            ? "rounded-br-md bg-[#F5C344] text-[#111820]"
+                            : "rounded-bl-md bg-white/[0.07] text-white/80"
+                        }`}
+                      >
+                        {item.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 border-t border-white/[0.07] p-3">
+                  <input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") sendChat();
+                    }}
+                    placeholder={tr("Message...")}
+                    className="h-10 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm outline-none placeholder:text-white/25"
+                  />
+                  <button
+                    onClick={sendChat}
+                    className="ui-button grid h-10 w-10 place-items-center rounded-xl bg-[#F5C344] text-[#111820]"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {game.winner && (
@@ -861,98 +1008,6 @@ export default function GamePage() {
             >
               New game
             </button>
-          )}
-
-          {/* Reactions + chat */}
-          <div className="absolute bottom-[calc(116px+env(safe-area-inset-bottom))] right-2.5 z-50 flex flex-col items-end gap-2 md:bottom-6 md:right-6">
-            {reactionOpen && (
-              <div className="emoji-panel flex gap-1 rounded-2xl border border-white/10 bg-[#111820]/95 p-2 shadow-2xl backdrop-blur-xl">
-                {QUICK_REACTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => sendReaction(emoji)}
-                    className="emoji-button grid h-10 w-10 place-items-center rounded-xl text-xl hover:bg-white/[0.06]"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setReactionOpen((v) => !v);
-                  setChatOpen(false);
-                }}
-                className="ui-button grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-[#111820]/95 shadow-xl"
-              >
-                <SmilePlus className="h-5 w-5 text-[#F5C344]" />
-              </button>
-
-              <button
-                onClick={() => {
-                  setChatOpen((v) => !v);
-                  setReactionOpen(false);
-                }}
-                className="ui-button grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-[#111820]/95 shadow-xl"
-              >
-                <MessageCircle className="h-5 w-5 text-white/70" />
-              </button>
-            </div>
-          </div>
-
-          {chatOpen && (
-            <div className="chat-panel absolute bottom-[calc(166px+env(safe-area-inset-bottom))] right-2.5 z-50 flex h-[270px] w-[286px] flex-col overflow-hidden rounded-[20px] border border-white/10 bg-[#0D151C]/97 shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl md:bottom-[64px] md:right-[70px]">
-              <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
-                <div>
-                  <div className="text-sm font-semibold">{tr("Game chat")}</div>
-                  <div className="text-[10px] text-white/35">{tr("Bot practice chat")}</div>
-                </div>
-                <button onClick={() => setChatOpen(false)} className="text-white/40 hover:text-white">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="flex-1 space-y-2 overflow-y-auto p-3">
-                {chat.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`flex ${item.side === "player" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm ${
-                        item.emoji ? "text-xl" : ""
-                      } ${
-                        item.side === "player"
-                          ? "rounded-br-md bg-[#F5C344] text-[#111820]"
-                          : "rounded-bl-md bg-white/[0.07] text-white/80"
-                      }`}
-                    >
-                      {item.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2 border-t border-white/[0.07] p-3">
-                <input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") sendChat();
-                  }}
-                  placeholder={tr("Message...")}
-                  className="h-10 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm outline-none placeholder:text-white/25"
-                />
-                <button
-                  onClick={sendChat}
-                  className="ui-button grid h-10 w-10 place-items-center rounded-xl bg-[#F5C344] text-[#111820]"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
           )}
         </section>
       </div>
