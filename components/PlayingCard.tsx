@@ -101,9 +101,9 @@ export function PlayingCard({
   const height = Math.round(width * ASPECT);
   const radius = Math.max(6, Math.round(width * 0.15));
   const pad = Math.max(3, Math.round(width * 0.09));
-  const rankSize = Math.round(width * 0.24);
-  const cornerSuitSize = Math.round(width * 0.22);
-  const bigSuitSize = Math.round(width * 0.34);
+  const rankSize = Math.round(width * 0.22);
+  const cornerSuitSize = Math.round(width * 0.16);
+  const centerSuitSize = Math.round(width * 0.5);
 
   const baseStyle: React.CSSProperties = {
     width,
@@ -189,18 +189,44 @@ export function PlayingCard({
         cursor: disabled ? "not-allowed" : onClick ? "pointer" : "default",
       }}
     >
-      <div style={{ fontSize: rankSize, fontWeight: 900, lineHeight: 1, color }}>{card.rank}</div>
-      <div style={{ marginTop: Math.round(width * 0.02) }}>
-        <SuitIcon suit={card.suit} size={cornerSuitSize} color={color} />
+      {/* Top-left index: rank + small suit pip, like a real card's corner mark */}
+      <div style={{ position: "absolute", top: pad, left: pad, textAlign: "center" }}>
+        <div style={{ fontSize: rankSize, fontWeight: 800, lineHeight: 1, color }}>{card.rank}</div>
+        <div style={{ marginTop: Math.round(width * 0.02), display: "flex", justifyContent: "center" }}>
+          <SuitIcon suit={card.suit} size={cornerSuitSize} color={color} />
+        </div>
       </div>
+
+      {/* Big centered suit pip — the card's main "face" */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <SuitIcon suit={card.suit} size={centerSuitSize} color={color} />
+      </div>
+
+      {/* Bottom-right index: same mark, rotated 180° — so it reads right-way-up
+          from the other side, exactly like a physical card. Kept clearly apart
+          from the top-left mark and the center pip (that overlap is what made
+          cards look like they had "two suits crammed in one spot" before). */}
       <div
         style={{
           position: "absolute",
           bottom: pad,
           right: pad,
+          textAlign: "center",
+          transform: "rotate(180deg)",
         }}
       >
-        <SuitIcon suit={card.suit} size={bigSuitSize} color={color} />
+        <div style={{ fontSize: rankSize, fontWeight: 800, lineHeight: 1, color }}>{card.rank}</div>
+        <div style={{ marginTop: Math.round(width * 0.02), display: "flex", justifyContent: "center" }}>
+          <SuitIcon suit={card.suit} size={cornerSuitSize} color={color} />
+        </div>
       </div>
     </button>
   );
