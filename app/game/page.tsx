@@ -64,7 +64,9 @@ function FaceCard({
   selected?: boolean;
   onClick?: () => void;
   hidden?: boolean;
-  nodeRef?: (node: HTMLButtonElement | null) => void;
+  nodeRef?: (
+    node: HTMLDivElement | HTMLButtonElement | null
+  ) => void;
 }) {
   const width = useGameCardWidth();
   return (
@@ -288,7 +290,7 @@ export default function GamePage() {
     { id: "hello", side: "bot", text: "Good luck! 👋" },
   ]);
 
-  const playerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const playerRefs = useRef<Record<string, HTMLDivElement | HTMLButtonElement | null>>({});
   const botRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const tableRef = useRef<HTMLDivElement | null>(null);
   const attackSlotRefs = useRef<Array<HTMLDivElement | null>>([]);
