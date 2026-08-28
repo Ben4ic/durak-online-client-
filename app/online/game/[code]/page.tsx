@@ -17,6 +17,7 @@ type State = {
   hand: Card[];
   opponentCardCount: number;
   deckCount: number;
+  deckSize?: number;
   trump: Suit | null;
   table: Pair[];
   attackerId: string | null;
@@ -279,7 +280,7 @@ export default function OnlineGamePage() {
           <div className="min-w-0 text-center">
             <div className="truncate text-[12px] font-semibold md:text-base">{tr("Classic Durak · Online")}</div>
             <div className="flex items-center justify-center gap-1 text-[9px] text-white/40 md:text-xs">
-              <span>{state.code}</span><span>·</span><span>{state.trump}</span><span>·</span><span>{state.deckCount}</span>
+              <span>{state.code}</span><span>·</span><SuitIcon suit={state.trump || "♠"} size={9} color="#F5C344" /><span>·</span><span>{state.deckCount}{state.deckSize ? `/${state.deckSize}` : ""}</span>
               <span className={`ml-1 flex items-center gap-1 rounded-full px-1.5 py-0.5 ${connected ? "bg-[#46D495]/10 text-[#70E6B0]" : "bg-red-400/10 text-red-300"}`}>
                 {connected ? <Wifi className="h-2.5 w-2.5" /> : <WifiOff className="h-2.5 w-2.5" />}
               </span>
@@ -331,7 +332,7 @@ export default function OnlineGamePage() {
           {error && <div className="mb-1 shrink-0 text-center text-[9px] text-red-300">{error}</div>}
 
           <div className="h-[82px] shrink-0 overflow-x-auto overflow-y-hidden pt-2 md:h-[132px]">
-            <div className="mx-auto flex w-max -space-x-3 px-4">
+            <div className="mx-auto flex w-max -space-x-1 px-4">
               {state.hand.map((card) => {
                 const ok = legal(card);
                 return <GameCard key={card.id} card={card} compact disabled={!ok} selected={selected === card.id} onClick={() => ok && setSelected(selected === card.id ? null : card.id)} />;
