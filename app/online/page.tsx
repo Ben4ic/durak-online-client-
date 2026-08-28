@@ -6,8 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
-type Room = { code: string; host: string; players: number; capacity: number };
-type Waiting = { code: string; status: "waiting" | "active" | "finished" };
+type Room = { code: string; host: string; players: number; capacity: number; deckSize?: number };
+type Waiting = { code: string; status: "waiting" | "active" | "finished"; deckSize?: number };
+
+const DECK_SIZES = [24, 36, 52] as const;
 
 function tokenKey(code: string) {
   return `durak-room-token:${code.toUpperCase()}`;
@@ -20,6 +22,7 @@ function OnlineLobby() {
 
   const [username, setUsername] = useState("Player");
   const [code, setCode] = useState(params.get("room")?.toUpperCase() || "");
+  const [deckSize, setDeckSize] = useState<typeof DECK_SIZES[number]>(36);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [waiting, setWaiting] = useState<Waiting | null>(null);
   const [busy, setBusy] = useState(false);
@@ -124,7 +127,7 @@ function OnlineLobby() {
   }
 
   async function createRoom() {
-    const data = await post("/api/online/create", { username });
+    const data = await post("/api/online/create", { username, deckSize });
     if (!data) return;
     const room = saveJoin(data);
     setWaiting(room);
@@ -132,7 +135,7 @@ function OnlineLobby() {
   }
 
   async function quick() {
-    const data = await post("/api/online/quick", { username });
+    const data = await post("/api/online/quick", { username, deckSize });
     if (!data) return;
     const room = saveJoin(data);
     if (room.status === "active") router.push(`/online/game/${room.code}`);
@@ -196,6 +199,9 @@ function OnlineLobby() {
         <div className="mx-auto max-w-[640px] rounded-[24px] border border-[#46D495]/20 bg-[#111820] p-5 text-center">
           <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-[#70E6B0]" />
           <h2 className="mt-4 text-xl font-semibold">{tr("Waiting for opponent")}</h2>
+          {waiting.deckSize && (
+            <div className="mt-1 text-xs text-white/35">{tr("Deck")}: {waiting.deckSize} {tr("cards")}</div>
+          )}
           <div className="mx-auto mt-5 flex max-w-[330px] items-center justify-between rounded-2xl border border-white/10 bg-black/15 px-4 py-3">
             <button
               onClick={() => copyText(waiting.code, "id")}
@@ -244,6 +250,28 @@ function OnlineLobby() {
         <label className="mb-2 block text-xs text-white/40">Player name</label>
         <input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={24}
           className="h-11 w-full rounded-xl border border-white/10 bg-white/[.04] px-3 outline-none" />
+
+        <label className="mb-2 mt-4 block text-xs text-white/40">{tr("Deck size")}</label>
+        <div className="grid grid-cols-3 gap-2">
+          {DECK_SIZES.map((size) => (
+            <button
+              key={size}
+              onClick={() => setDeckSize(size)}
+              className={`h-10 rounded-xl border text-sm font-semibold transition-colors ${
+                deckSize === size
+                  ? "border-[#F5C344]/40 bg-[#F5C344]/[.12] text-[#F5C344]"
+                  : "border-white/10 bg-white/[.02] text-white/50"
+              }`}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+        <div className="mt-1.5 text-[11px] text-white/30">
+          {deckSize === 24 && tr("Short deck — 9 to Ace, faster games")}
+          {deckSize === 36 && tr("Classic Russian deck — 6 to Ace")}
+          {deckSize === 52 && tr("Full deck — 2 to Ace, longer games")}
+        </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -274,24 +302,39 @@ function OnlineLobby() {
       <div className="rounded-[20px] border border-white/10 bg-[#111820] p-4">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="font-semibold">{tr("Public Lobby")}</div>
+            <div className="font-semibold">{tr("Tables")}</div>
             <div className="text-xs text-white/35">{tr("Rooms waiting for a second player")}</div>
           </div>
           <button onClick={loadRooms} className="grid h-9 w-9 place-items-center rounded-lg border border-white/10"><RefreshCw className="h-4 w-4" /></button>
         </div>
         <div className="space-y-2">
           {rooms.map((room) => (
-            <div key={room.code} className="flex items-center gap-3 rounded-xl border border-white/[.07] bg-white/[.025] p-3">
+            <div key={room.code} className="flex items-center gap-3 rounded-xl border border-white/[.07] bg-gradient-to-r from-[#193A2C]/40 to-white/[.025] p-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#46D495]/25 bg-[#193A2C]">
+                <Users className="h-4.5 w-4.5 text-[#70E6B0]" />
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{room.host}</div>
-                <div className="text-[11px] text-white/35">{room.code} · {room.players}/{room.capacity}</div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/35">
+                  <span className="font-mono">{room.code}</span>
+                  <span>· {room.players}/{room.capacity} {tr("players")}</span>
+                  {room.deckSize && (
+                    <span className="rounded-full border border-white/10 bg-white/[.04] px-1.5 py-0.5 text-white/45">
+                      {tr("Deck")} {room.deckSize}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button disabled={busy} onClick={() => join(room.code)} className="flex items-center gap-1.5 rounded-lg bg-[#F5C344] px-3 py-2 text-xs font-bold text-[#111820]">
+              <button disabled={busy} onClick={() => join(room.code)} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#F5C344] px-3 py-2 text-xs font-bold text-[#111820] disabled:opacity-50">
                 <ExternalLink className="h-3.5 w-3.5" /> {tr("Join")}
               </button>
             </div>
           ))}
-          {!rooms.length && <div className="py-8 text-center text-sm text-white/25">{tr("No public rooms are waiting right now.")}</div>}
+          {!rooms.length && (
+            <div className="py-8 text-center text-sm text-white/25">
+              {tr("No tables are open right now — create one or try Quick Match.")}
+            </div>
+          )}
         </div>
       </div>
     </ResponsiveShell>
