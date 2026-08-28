@@ -79,7 +79,7 @@ type PlayingCardProps = {
   onClick?: () => void;
   style?: React.CSSProperties;
   className?: string;
-  nodeRef?: (node: HTMLButtonElement | HTMLDivElement | null) => void;
+  nodeRef?: React.Ref<HTMLButtonElement | HTMLDivElement>;
   children?: React.ReactNode; // overlay content (e.g. a face-down deck icon)
 };
 
@@ -124,7 +124,7 @@ export function PlayingCard({
   if (faceDown) {
     return (
       <div
-        ref={nodeRef as (n: HTMLDivElement | null) => void}
+        ref={nodeRef as React.Ref<HTMLDivElement>}
         className={className}
         style={{
           ...baseStyle,
@@ -166,7 +166,7 @@ export function PlayingCard({
 
   return (
     <button
-      ref={nodeRef as (n: HTMLButtonElement | null) => void}
+      ref={nodeRef as React.Ref<HTMLButtonElement>}
       onClick={onClick}
       disabled={disabled}
       className={className}
