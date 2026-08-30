@@ -125,6 +125,12 @@ export default function OnlineGamePage() {
   }, [code, router]);
 
   const applyState = useCallback((next: State) => {
+    // Same defensive principle as the lobby page: never let a malformed
+    // response (backend hiccup, wrong shape) replace good state with
+    // something `.map()` calls further down will crash on. If it doesn't
+    // look like a real game state, just skip this update — the next poll
+    // will retry.
+    if (!next || (next.status !== "waiting" && (!Array.isArray(next.hand) || !Array.isArray(next.table)))) return;
     const rev = next.revision ?? 0;
     if (rev < latestRevision.current) return;
     latestRevision.current = rev;
