@@ -40,7 +40,15 @@ function OnlineLobby() {
   async function loadRooms() {
     try {
       const r = await fetch(`/api/online/public?t=${Date.now()}`, { cache: "no-store" });
-      if (r.ok) setRooms(await r.json());
+      if (!r.ok) return;
+      const data = await r.json();
+      // Defensive: never trust the API to always return an array. A
+      // backend hiccup (auth issue, transient error, wrong shape) used to
+      // set `rooms` to whatever came back — if that wasn't an array,
+      // `rooms.map(...)` below crashed the ENTIRE /online page with a
+      // white-screen "Application error", not just the room list. Now a
+      // bad response just means an empty table list instead of a crash.
+      setRooms(Array.isArray(data) ? data : []);
     } catch {}
   }
 
